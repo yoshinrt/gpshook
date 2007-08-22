@@ -1,3 +1,5 @@
+// $Id$
+
 CFG_PARAM( WarnSpeed,		30 )
 CFG_PARAM( WarnDistance,	0 )
 CFG_PARAM( WarnETA,			20 )

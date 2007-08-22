@@ -1,4 +1,5 @@
 # .tab=4
+# $Id$
 
 TARGET = gpshook
 OBJS = \
