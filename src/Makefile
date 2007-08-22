@@ -87,7 +87,9 @@ release:
 			../gpshook$(VERSION)/GpsLogCv \
 	)
 	
-	( cd ../gpshook$(VERSION); lha a -d ../gpshook$(VERSION).lzh * )
+	( cd ../gpshook$(VERSION); \
+	rm -rf `find . -name CVS`; \
+	lha a -d ../gpshook$(VERSION).lzh * )
 
 debug:
 	make DEBUG=1
