@@ -1,0 +1,850 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META name="GENERATOR" content="IBM WebSphere Studio Homepage Builder Version 8.0.2.0 for Windows">
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<HR>
+<P align="center"><B><FONT size="+2">GPSログデータコンバータ</FONT></B></P>
+<P align="center">Last Update 07-Jul-2005<BR>
+V0.39<HR>
+<B>変更履歴</B><BR>
+07-Jul-2005 V0.39 MapSource .GDB(Trackのみ)の読み込みに対応。 <BR>
+06-Jun-2005 V0.38 Panasonic CN-HS400 ルートポイント.RMFの読み込みに対応。<BR>
+13-May-2005 V0.37a .fx処理でエラーになるenbugの修正。<BR>
+10-May-2005 V0.37 CN-HS400 軌跡 .SMFの読みこみに対応。 <BR>
+08-May-2005 V0.36 ItsMoNavi ポイント登録.XMLの読みこみに対応。<BR>
+06-May-2005 V0.35 Panasonic CN-HS400 ポイント登録.PMFの読み書きに対応。<BR>
+　　　　　　　　　　　　　　関連するNYPu(ユーザポイント), POTw,WPT機能強化。<BR>
+03-Aug-2003 V0.34n TDFに時間が異常なレコードがある場合の対処を追加。<BR>
+13-Apr-2003 V0.34m threadの先頭で時間が逆転した場合、無効データとしない。<BR>
+09-Apr-2003 V0.34l 入力測地系を強制指定する-IWGS84,-ITOKYOオプション追加。<BR>
+　　　　　　　　　　　　　　-ORオプション指定時、入力と出力に同じタイプを許容。<BR>
+　　　　　　　　　　　　　　入力がNMEAの時、最終レコードが完了していない場合も出力する。<BR>
+05-Apr-2003 V0.34k .POTで南半球の赤道付近が正しく扱えないbugの修正。<BR>
+19-Dec-2002 V0.34j .POTで低緯度、南半球が正しく扱えないbugの修正。<BR>
+27-Jun-2002 V0.34i .TDF同一時刻データに対処できないbugの修正。.NME Altitudeが正しくないbugの修正。<BR>
+20-Jun-2002 V0.34h NMEAの$PNTSセンテンスに対応<BR>
+01-May-2002 V0.34g WPT/POT-&gt;WWPで&quot;ポイント名&quot;を反映するよう修正。waypoint出力時も時間遡行などを異常値扱いしていたbug修正。<BR>
+18-Apr-2002 V0.34f WPT-&gt;WWPで高度情報が反映されないbug修正。.POT waypoint出力サポート。<BR>
+07-Mar-2002 V0.34e gar2wsのlog.fx形式の8バイトレコードBug修正<BR>
+22-Feb-2002 V0.34d WWPでポイント名が正しくないBug修正<BR>
+30-Jan-2002 V0.34c WWPに高度情報の書き込み追加<BR>
+05-Jan-2002 V0.34b WWPでポイント名が正しくないBug修正<BR>
+12-Dec-2001 V0.34a WWP Bug Fix<BR>
+08-Dec-2001 V0.34 WonderWitch logger Waypoint(WWP) support<BR>
+12-Nov-2001 V0.33b 漢字名称を出力しない-kオプション。potrで地点名が漢字の時、/ide=付加<BR>
+11-Nov-2001 V0.33a .rml入力でスレッド使用デフォルトpotr、potrで同一点無視。エンドポイント強制出力。<BR>
+01-Nov-2001 V0.33 .stf出力追加<BR>
+28-Aug-2001V.032 POTのROUTE形式出力に対応。<BR>
+22-Aug-2001V.031i HGR3の最下位桁処理バグ修正。<BR>
+09-Jul-2001 V.031g TDF_VERSION 0の日付が狂うbug修正。<BR>
+07-Jul-2001 V.031f TDF_VERSION 1に対応。<BR>
+09-Jun-2001 V.031e WonderWitchでファイル分割のために出来る.tdfの擬似スレッドを扱えるように修正。<BR>
+07-Jun-2001 V.031d WonderWitchの.fxファイルヘッダをサポート。 <BR>
+18-May-2001 V.031c gar2ws .log.fxファイルの読み書き対応。<BR>
+20-Mar-2001 V.030  MapFan Vルートエクスプローラ.rml読み込み対応。<BR>
+20-Mar-2001 V.029  .wpt,userpointを含むnypの読み書き。.potのTEX=対応,IPS8000最下位桁対応<BR>
+20-Mar-2001 V.028d .tdf公開。受信状態、衛星情報、out_IPS追加。MSS(MPSa)機能強化<BR>
+22-Jan-2001 V.027b 異常値スキップ/間引き系オプションインプリメント<BR>
+15-Jan-2001 V.026d 重複レコード対策。CSVマイナーバグ修正<BR>
+14-Dec-2000 V.026c .potの測地系対応強化<BR>
+26-Nov-2000 V.026b .sglを使いやすいように小改良。<BR>
+16-Nov-2000 V.026a .nmeに磁針偏差項追加。<BR>
+15-Nov-2000 V.026  .gdn(gradown track)入出力追加。<BR>
+06-Nov-2000 V.025  .nme出力追加。<BR>
+18-Jul-2000 V.024b 西経、南緯の時マイナスの値を渡すよう変更。<BR>
+17-Jul-2000 V.024a .sglの時刻が狂うbug修正<BR>
+10-Jul-2000 V.024  .sgl対応<BR>
+07-May-2000 V.023  Kashmir VCD対応。<BR>
+20-Apr-2000 V.022  bug修正。.pot出力の自由度向上。<BR>
+15-Mar-2000 V.021  Kashmir CSV入出力追加。<BR>
+11-Mar-2000 V0.20  CSV出力追加。<BR>
+01-Mar-2000 このページにファイルタイプ追加の手引きを加えました。<BR>
+23-Feb-2000 V0.19a MapServerScript bug fix<BR>
+22-Feb-2000 V0.19  MapServerScript 出力に対応<BR>
+05-Feb-2000 V0.18  Garmin MapSource .MPS入力に対応<BR>
+28-JAN-2000        入力がnypかつ補正不要のとき日付が正しくないbugの修正<BR>
+28-Oct-1999        Garmin Simple Text Format サポート<BR>
+31-Aug-1999        initial beta release<BR>
+<HR>
+<B>お断り</B><BR>
+これはβバージョンです。おまけにまだV0.39です。^-^; <BR>
+インプットデータは必ずコピーを取り、アウトプットは他のものとまざらないようにしてください。
+<BR>
+このhtml自体、昔のユーティリティ用のページをまとめただけのものなのでインプリメントが異なっていたり、されていなかったり、オプションなどに嘘が書いてあることがあります。^-^;
+<HR>
+<P><A href="GPSLogCv039.zip">GPSLogCv</A> 222KB</P>
+<HR>
+<P><B><FONT size="+1">GPSで取得できるデータと各フォーマットの関係</FONT></B></P>
+<TABLE border="1">
+  <TBODY>
+    <TR>
+      <TH width="74"></TH>
+      <TH width="74">緯度/経度</TH>
+      <TH width="74">時刻</TH>
+      <TH width="74">高度</TH>
+      <TH width="74">速度</TH>
+      <TH width="74">移動方向</TH>
+      <TH width="74">測位状態</TH>
+      <TH width="74">測地系</TH>
+      <TH width="74">スレッド</TH>
+      <TH width="74">その他</TH>
+    </TR>
+    <TR>
+      <TH></TH>
+      <TH valign="top"><B>1次情報</B></TH>
+      <TH valign="top"><B>1次情報</B></TH>
+      <TH valign="top">1次情報<BR>
+      但し、地を這う乗り物ならその地点の標高として求められる。<BR>
+      (例えばKashmirで可能)</TH>
+      <TH valign="top">ドップラーシフトによる場合は1次情報。<BR>
+      位置情報から計算する場合は2次情報。</TH>
+      <TH valign="top">位置情報から計算する2次情報。</TH>
+      <TH valign="top">1次情報</TH>
+      <TH></TH>
+      <TH valign="top">2次情報</TH>
+      <TH></TH>
+    </TR>
+    <TR>
+      <TH>.TRK<BR>
+      Garmin PCX5のデータ形式</TH>
+      <TD>D<BR>
+      DM<BR>
+      DMS</TD>
+      <TD>UTC</TD>
+      <TD>○</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>任意</TD>
+      <TD>○</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.TXT<BR>
+      Waypoint+のテキスト形式</TH>
+      <TD>D<BR>
+      DM<BR>
+      DMS</TD>
+      <TD>UTC</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>任意</TD>
+      <TD>○</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.LOG<BR>
+      Pro Atlas</TH>
+      <TD>DMS</TD>
+      <TD>JST<BR>
+      UTC</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>Tokyo<BR>
+      WGS84</TD>
+      <TD>×</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.MPS<BR>
+      MapSource</TH>
+      <TD>DEG(固定小数点)</TD>
+      <TD>time_t</TD>
+      <TD>△機種依存</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>WGS84</TD>
+      <TD>○</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.MTK(TRK)<BR>
+      Mapfan series</TH>
+      <TD>DEG/256</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>Tokyo</TD>
+      <TD>×</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.POT</TH>
+      <TD>DMS</TD>
+      <TD>JST</TD>
+      <TD>○</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>Tokyo</TD>
+      <TD>○</TD>
+      <TD>描画色など</TD>
+    </TR>
+    <TR>
+      <TH>.ZPO<BR>
+      Zenrin Z[zi]II<BR>
+      図形ファイル</TH>
+      <TD>DEG</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD>×</TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TH>.NYP<BR>
+      .(拡張子無し)<BR>
+      Sony Navin'Youのバイナリデータ<BR>
+      </TH>
+      <TD>DEG(固定小数点)<BR>
+      マップマッチしている場合は二次情報。</TD>
+      <TD>time_t<BR>
+      IPS系GPSを使った場合バグあり。(注1)</TD>
+      <TD>×</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>Tokyo</TD>
+      <TD>×</TD>
+      <TD>マップマッチ<BR>
+      補正(解析中)</TD>
+    </TR>
+    <TR>
+      <TH>.IPS<BR>
+      SONY GPS<BR>
+      IPS5x00シリーズ<BR>
+      ETAK</TH>
+      <TD>DM<BR>
+      DMS</TD>
+      <TD>UTC</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>Tokyo<BR>
+      WGS84<BR>
+      他</TD>
+      <TD>--</TD>
+      <TD>衛星位置<BR>
+      他</TD>
+    </TR>
+    <TR>
+      <TH>.NME<BR>
+      NMEA0813準拠</TH>
+      <TD>DM</TD>
+      <TD>UTC</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>○</TD>
+      <TD>○<BR>
+      2D/3D/DGPS</TD>
+      <TD>任意<BR>
+      規定のセンテンスだけでは判別できない。</TD>
+      <TD>--</TD>
+      <TD>衛星位置<BR>
+      他</TD>
+    </TR>
+    <TR>
+      <TH>.STF<BR>
+      Garmin<BR>
+      Simple Text Format</TH>
+      <TD>DM</TD>
+      <TD>UTC</TD>
+      <TD>○</TD>
+      <TD>○<BR>
+      EW,NS,UDの3成分</TD>
+      <TD>×<BR>
+      但し、GPSLogCvが速度ベクタから計算します。</TD>
+      <TD>○<BR>
+      2D/3D/DGPS</TD>
+      <TD>WGS84</TD>
+      <TD>--</TD>
+      <TD>EPE(Estimated Position Error)</TD>
+    </TR>
+  </TBODY>
+</TABLE>
+<P>ここで二次情報は一次情報から求められる情報という意味です。</P>
+<HR>
+<B>扱えるファイル形式</B>
+<TABLE border="1">
+  <TBODY>
+    <TR>
+      <TD></TD>
+      <TD></TD>
+      <TD></TD>
+      <TD></TD>
+    </TR>
+    <TR>
+      <TD>無し(NNN)</TD>
+      <TD>R</TD>
+      <TD>B</TD>
+      <TD>Sony Navin' Youの走行パスファイル。Navin' YouのDriveLogディレクトリの下にある拡張子の無いファイルです。</TD>
+    </TR>
+    <TR>
+      <TD>CSV</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Kashmir GPSファイルツールプラグインのCSV形式。</TD>
+    </TR>
+    <TR>
+      <TD>CSG/CSVg</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>SONY GtrexのCSV形式。</TD>
+    </TR>
+    <TR>
+      <TD>(LOG.)FX</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>GARMIN GPSのトラックログに特化した差分フォーマットです。</TD>
+    </TR>
+    <TR>
+      <TD>GDN</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Gardown形式トラックログファイル</TD>
+    </TR>
+    <TR>
+      <TD>SGL</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>SONY Handy GPSログマネージャのデータ形式。Navin'You, GTrexで使えます。</TD>
+    </TR>
+    <TR>
+      <TD>TRK</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Garminの以前の標準ソフト、PCX5のトラック形式。カシミール3Dでも読み書きできます。カシミールで読み書きを行うとその地点の標高が高度として記録される、Navin'Youのデータを変換すると&quot;渋谷-東京&quot;と言った具合にラベルが付くので保存する場合はこのフォーマットがお勧めです。</TD>
+    </TR>
+    <TR>
+      <TD>TXT</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>有名なGarmin用フリーウェア、Waypoint+のテキスト形式。(Waypoint+の独自形式は扱えません)</TD>
+    </TR>
+    <TR>
+      <TD>IPS</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>IPS/ETAK/HGRフォーマットGPSの出力をキャプチャーしたもの。</TD>
+    </TR>
+    <TR>
+      <TD>LOG</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>ProAtlas GPSドライバのログ形式。GPSドライバのログ再生で地図上に表示できます。ただし、ログ再生ですので、結構、時間がかかります。また、表示できるポイントに制限があるのであらかじめ間引いておくと良いでしょう。</TD>
+    </TR>
+    <TR>
+      <TD>MPS</TD>
+      <TD>R</TD>
+      <TD>B</TD>
+      <TD>Garmin MapSourceのデータフォーマット。トラック以外のデータを含んでいても構いませんが扱うのはトラックデータのみです。</TD>
+    </TR>
+    <TR>
+      <TD>MSS/MPSa</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>ProAtlas 2000以降で使用できるMapServerScript形式。本当はこれも.MPSという拡張子なのですが上の.MPSと混同しないように.MSSとしています。</TD>
+    </TR>
+    <TR>
+      <TD>MTK/TRKm</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>MapFanIIのログフォーマット。ProAtlasと同じくログ再生なので制約があります。ポイント数が750と少ないので間引きは必須でしょう。PCX5の.TRKと混同しないようmtkと呼んでいます。</TD>
+    </TR>
+    <TR>
+      <TD>NME</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>NMEAフォーマットGPSの出力をキャプチャーしたもの。</TD>
+    </TR>
+    <TR>
+      <TD>NYP</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>Sony Navin'Youのパッケージファイル。扱えるのは走行パスだけを収めたものに限ります。</TD>
+    </TR>
+    <TR>
+      <TD>NYPu</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>Sony Navin'YouのUserPointを納めたパッケージファイル。</TD>
+    </TR>
+    <TR>
+      <TD>POT</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>POTフォーマット</TD>
+    </TR>
+    <TR>
+      <TD>POTR</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>POT Routeフォーマット。GarmapCEなどで使えます。</TD>
+    </TR>
+    <TR>
+      <TD>RML</TD>
+      <TD>R</TD>
+      <TD>H</TD>
+      <TD>MapFan V ルートエクスプローラ形式。ルートファイルの作成に。</TD>
+    </TR>
+    <TR>
+      <TD>STF</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Garmin Simple Text Format出力をキャプチャーしたもの。(WGS84固定でない機種もありますがWGS84として扱います)</TD>
+    </TR>
+    <TR>
+      <TD>TDF</TD>
+      <TD>R/W</TD>
+      <TD>B</TD>
+      <TD>Track Diff Format。非可逆の差分フォーマットです。平均2.1バイト/ポイント。</TD>
+    </TR>
+    <TR>
+      <TD>VCD</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Kashmirの海岸線/県境ファイルです。</TD>
+    </TR>
+    <TR>
+      <TD>WPT</TD>
+      <TD>R/W</TD>
+      <TD>T</TD>
+      <TD>Garminの以前の標準ソフト、PCX5のWayPoint形式。</TD>
+    </TR>
+    <TR>
+      <TD>ZPO</TD>
+      <TD>R</TD>
+      <TD>H</TD>
+      <TD>Zenrin Z[Zi:]IIの図形ファイル。ルート探索の結果も図形として保存できるのでGPS用のルートファイルを作成するのに便利です。</TD>
+    </TR>
+  </TBODY>
+</TABLE>
+
+
+<HR>
+<P>使い方<BR>
+<BR>
+GPSLogCvは、Win32コマンドラインアプリケーションで一般的なSyntaxは次のようになります。</P>
+<P>GPSLogCv [&lt;オプション&gt;] &lt;ファイル名(ワイルドカード可)&gt;<BR>
+<BR>
+ちょっと変わっているのは<BR>
+例えばnyp2trkという名前にすると入力形式のデフォルトは.nyp,出力形式のデフォルトは.trkになります。詳細は下のフォーマット指定規則を参考にしてください。<BR>
+<BR>
+使用例<BR>
+<BR>
+全てのnypファイルを.TRK形式に変換します。<BR>
+nyp2trk *.nyp<BR>
+<BR>
+nypファイル内の走行パスの一覧をファイルにします。<BR>
+nyp2trk -tlst *.nyp</P>
+<HR>
+<P>フォーマット指定規則<BR>
+優先度の高い方から順に、<BR>
+<BR>
+1)オプションで指定する<BR>
+　主にフィルタとして使う時にこの方法を使います。<BR>
+　入力<BR>
+　　-I[CSV|CSVg|CSG|TRK|TRKm|TXT|IPS|LOG|MPS|MTK|NME|NNN|NYP|STF|ZPO]<BR>
+　出力<BR>
+　　-T[CSV|CSVg|CSG|TRK|TRKm|TXT|LOG|MSS|MPSa|MTK|NME|NYP|POT]　<BR>
+<BR>
+2)実行ファイル名をリネームしておく。GPSLogCvはunixのいくつかのコマンドと同じく自分がなんという名前で呼ばれたかによってデフォルトの動作が変わります。<BR>
+　Drag&amp;Dropで特定のタイプに変換したいときはこの方法で指定します。<BR>
+<BR>
+　[input_typ]2[output_typ].exe<BR>
+<BR>
+例えば、trk2txt.exeとリネームした場合は.TRK-&gt;.TXTと指定したことになります。この時、入力の実際の拡張子は無視されるので注意してください。逆にいうとnme2trk.exeに.NMEAや中身がNMEAの.TXTをドロップしたりできる訳です。<BR>
+　サポート外の拡張子を使うと無指定です。例えば、<BR>
+gps2mpsa.exe なら入力は指定なし、出力は全部.MPS(Alps
+Map Server Script)です。<BR>
+gpslogcv.exeのように全く規定外だと両方とも無指定です。<BR>
+<BR>
+3)入力ファイルの拡張子で指定する。<BR>
+　.TRKを.TXTに変換する以外は総て.TRKに変換します。<BR>
+<BR>
+4)フィルタモードで入力ファイルタイプが特定できない場合は.TRKと仮定します。<BR>
+　3)のルールを適用して出力は.TXTとなります。<BR>
+</P>
+<HR>
+<P>オプション</P>
+<TABLE border="1">
+  <TBODY>
+    <TR>
+      <TD></TD>
+      <TD></TD>
+      <TD></TD>
+      <TD></TD>
+      </TR>
+    <TR>
+      <TD rowspan="5">GPS指定<BR>
+      V3.5までのNavin' YouでIPS系GPSを使用した場合の日付bug補正。<BR>
+      入力がnypのときのみ有効。<BR>
+      <FONT color="#ff0000">現在はSONYから修正プログラムが出ていますのでそちらを使用してください。</FONT></TD>
+      <TD rowspan="5">-G</TD>
+      <TD colspan="2"></TD>
+    </TR>
+    <TR>
+      <TD>無指定</TD>
+      <TD>自動(デフォルト)<BR>
+      ファイルの書きこみ日付が最終レコードの日付より新しい場合、IPSと判断します。</TD>
+      </TR>
+    <TR>
+      <TD>IPS</TD>
+      <TD>IPSのとき。</TD>
+      </TR>
+    <TR>
+      <TD>GARMIN</TD>
+      <TD>無指定と同じです。</TD>
+      </TR>
+    <TR>
+      <TD>MITSUMI</TD>
+      <TD>無補正(Mobile packのとき)</TD>
+      </TR>
+    <TR>
+      <TD rowspan="5">データの間引き</TD>
+      <TD rowspan="5">-S</TD>
+      <TD>Dn</TD>
+      <TD>n[m]以上離れた点のみ処理します。(デフォルト:0)</TD>
+      </TR>
+    <TR>
+      <TD>Tn</TD>
+      <TD>n[sec]以上経過したデータのみ処理します。(デフォルト:<FONT color="#ff0000">1</FONT>)</TD>
+      </TR>
+    <TR>
+      <TD>Hn</TD>
+      <TD>n[Km/h]を越えるデータをスキップします。</TD>
+    </TR>
+    <TR>
+      <TD>Ln</TD>
+      <TD>n[Km/h]以下のデータをスキップします。</TD>
+    </TR>
+    <TR>
+      <TD>A</TD>
+      <TD>異常値を総てスキップします。</TD>
+      </TR>
+    <TR>
+      <TD>出力先</TD>
+      <TD colspan="2">-F</TD>
+      <TD>stdoutに出力します。</TD>
+      </TR>
+    <TR>
+      <TD rowspan="2">異常値の処理<BR>
+      (未実装)</TD>
+      <TD>-S</TD>
+      <TD>xxxx</TD>
+      <TD>16進数xxxxでデータをスキップする異常の種類を指定します(デフォルト:fffe)<BR>
+      スキップした次のデータをスレッドの最初のデータとします。<BR>
+      <BR>
+      002 同一時間のデータ。<BR>
+      010 不正な時間データ。<BR>
+      020 時間を遡るデータ。<BR>
+      040 北緯20度-48度の範囲外。<BR>
+      080 緯度方向の移動速度が秒速1Kmを越えるデータ。<BR>
+      100 東経120度-150度の範囲外。<BR>
+      200 経度方向の移動速度が秒速1Kmを越えるデータ。<BR>
+      <BR>
+      デフォルトはfffeです。0に設定すると総てのデータがファイルに出力されますが異常値をはねなかった場合、正常な動作は保証出来なくなります。</TD>
+      </TR>
+    <TR>
+      <TD>-W</TD>
+      <TD>xxxx</TD>
+      <TD>16進数xxxxでデータをスキップした場合に警告を出す異常の種類を指定します(デフォルト:fffc、同一時間データのスキップ以外すべての警告を出します。)<BR>
+      値の意味は上記-Sと同じです。-W0で一切の警告が出なくなります。</TD>
+      </TR>
+    <TR>
+      <TD rowspan="2">形式</TD>
+      <TD colspan="2">-Ityp</TD>
+      <TD>入力フォーマットを指定します。</TD>
+      </TR>
+    <TR>
+      <TD colspan="2">-Ttyp</TD>
+      <TD>出力フォーマットを選択します。</TD>
+      </TR>
+    <TR>
+      <TD>処理</TD>
+      <TD colspan="2">-L</TD>
+      <TD>情報一覧のみ表示します。</TD>
+      </TR>
+    <TR>
+      <TD rowspan="5" width="143">出力ファイル<BR>
+      出力するファイルと同名のファイルがある場合の処理。変換したデータと勘違いして掛け替えの無いダウンロードしたGPSデータを削除しないよう注意してください。</TD>
+      <TD rowspan="4">-O</TD>
+      <TD>N</TD>
+      <TD>上書きしません。</TD>
+      </TR>
+    <TR>
+      <TD>Q</TD>
+      <TD>問い合わせます。(デフォルト)<BR>
+      'A'を指定するとそれ以降、すべて上書きされます。'R'を指定するとそれ以降-ORと同じ動作。</TD>
+      </TR>
+    <TR>
+      <TD>R</TD>
+      <TD>末尾に_nnを付けたファイル名にrenameします。</TD>
+      </TR>
+    <TR>
+      <TD>F</TD>
+      <TD>上書きします。</TD>
+      </TR>
+    <TR>
+      <TD colspan="2">-U</TD>
+      <TD>出力ファイルのタイムスタンプを最終レコードの日付と同じにします。</TD>
+      </TR>
+    <TR>
+      <TD rowspan="2">補助データ</TD>
+      <TD>-M</TD>
+      <TD>map</TD>
+      <TD>地図データ名を指定します。</TD>
+      </TR>
+    <TR>
+      <TD>-H</TD>
+      <TD>path</TD>
+      <TD>走行パス名を指定します。</TD>
+      </TR>
+    <TR>
+      <TD></TD>
+      <TD colspan="2">-Q</TD>
+      <TD>Pauseしない。</TD>
+      </TR>
+    <TR>
+      <TD></TD>
+      <TD>-I</TD>
+      <TD>dir</TD>
+      <TD>DriveLog.idxのあるディレクトリを指定する。<BR>
+      指定が無い場合、入力ファイルのあるディレクトリ、実行ファイルのあるディレクトリの順に探します。</TD>
+      </TR>
+  </TBODY>
+</TABLE>
+<BR>
+<HR>
+<P>制限:<BR>
+速度、進行方向はそのデータの無い形式のファイルを入力すると最初の一点は必ず速度0に、進行方向は真北になります。以降はその前のポイントの緯度/経度データから計算します。<BR>
+</P>
+<HR>
+<P>ファイルタイプ追加の手引き<BR><BR>
+1) gpslogcv.c中のDAT_XXXを定義する。XXXは原則としてファイルタイプと同じにします。<BR>
+これはフォーマットが持っている/必要になる情報及び属性のデフォルトを決める物です。<BR>
+<BR>
+<B>DAT_DMS/DAT_DMM</B> 出力時にどちらか一方の選択しかできない場合に定義する。<BR>
+<B>DAT_ALT</B> 高度情報がある/必要な場合に定義する。<BR>
+<B>DAT_TIM</B> 時間情報がある/必要な場合に定義する。<BR>
+<B>DAT_JST</B> 時間情報がJST固定の場合に定義する。<BR>
+<B>DAT_TKY/DAT_WGS</B> 測地系情報がどちらか固定の場合に定義する。<BR>
+<B>DAT_DST</B> 距離情報がある/必要な場合に定義する。<BR>
+<B>DAT_HED</B> 進行方向情報がある/必要な場合に定義する。<BR>
+<B>DAT_STA</B> GPS Status情報がある場合に定義する。<BR>
+<BR>
+2) fn_Table_t inFunc[]に定義を加える。<BR>
+<B>char *name</B>; ファイルタイプ名<BR>
+<B>int datTyp;</B> 上記のDAT_XXX<BR>
+<B>int deflt;</B> デフォルトの変換を定義する。通常は.TRKのインデックス=1。決して自分自身にはしないこと。<BR>
+<B>int (*func)();</B> 後述の入力関数<BR>
+<B>char *description;</B> ファイルタイプの説明<BR>
+<BR>
+3) out_Table_t outFunc[]に出力ルーチンと出力ファイルクローズ処理ルーチンを定義する。<BR>
+<B>char *name</B>; ファイルタイプ名<BR>
+<B>int datTyp</B>; デフォルトの属性を定義する。<BR>
+<B>void (*func)()</B>; 後述の出力関数<BR>
+<B>int (*cls_func)(FILE *out);</B> 後述の出力終了関数<BR>
+<B>char *description;</B> ファイルタイプの説明<BR>
+<BR>
+<BR>
+4) usage()に説明を加える。<BR>
+<BR>
+5) gpslogcv.hに入力、出力、出力終了関数のextern宣言を加える。<BR>
+<BR>
+6) xxx.cを作成する。<BR>
+<BR>
+6.1) 入力関数<BR>
+<BR>
+int in_XXX(FILE <B>*rFile</B>, cordinate_t <B>*position</B>, cnvData_t <B>*GPSLogp</B>)<BR>
+/* global val :lbuf,datum,mParam */<BR>
+<BR>
+渡される引数<BR>
+<B>FILE *rFile</B> 入力ファイルのハンドラ<BR>
+<BR>
+<B>cordinate_t *position</B> 位置情報を収める構造体へのポインタ<BR>
+-&gt;<B>lat</B> 緯度を十進の度で設定する。南緯はマイナスの値を取る。<BR>
+<B>-&gt;lon</B> 経度を十進の度で設定する。西経はマイナスの値を取る。<BR>
+<B>-&gt;alt</B> 高度をメートル単位で設定する。<BR>
+DAT_ALTの定義が無い場合は設定しなくて良い。<BR>
+DAT_ALTの定義があり、値が無効な場合は-9999を設定する。<BR>
+<BR>
+<B>cnvData_t *GPSLogp</B> 付随情報を収める構造体へのポインタ<BR>
+-&gt;<B>datTyp</B> 入力によって変わる場合は、<BR>
+DAT_ALT,DAT_TIM,DAT_JST,DAT_TKY/DAT_WGS,DAT_DST,DAT_HED,DAT_SATを設定する。<BR>
+<B>-&gt;thread</B> スレッドの先頭の時、1を設定する。<BR>
+<B>dist;</B> 一点前からの距離をmで設定する。<BR>
+DAT_DSTの定義が無い場合は設定しなくて良い。<BR>
+出力に必要な場合、計算されます。<BR>
+<B>-&gt;speed;</B> 速度をKm/hで設定する。<BR>
+DAT_SPDの定義が無い場合は設定しなくて良い。<BR>
+出力に必要な場合、計算されます。<BR>
+<B>-&gt;head</B>; 移動方向を0-360度の範囲で設定する。<BR>
+DAT_HEDの定義が無い場合は設定しなくて良い。<BR>
+出力に必要な場合、計算されます。<BR>
+DAT_HEDの定義があり、値が無効な場合はマイナスの値を設定する。<BR>
+<B>-&gt;dop;</B> リザーブ<BR>
+<B>-&gt;recTime;</B> tm構造体の定義に従って年月日、時分秒を設定する。<BR>
+DAT_TIMの定義が無い場合は設定しなくて良い。<BR>
+出力に必要な場合、一定速度と仮定して移動距離から計算されます。<BR>
+UTCでないとき、DAT_JSTの設定を忘れないこと。<BR>
+<B>-&gt;rcvStat;</B> リザーブ(2D,3D,4DGPS)<BR>
+-&gt;<B>mpp</B>; WGS84へ変換するためのmolodenskyパラメータを設定する。<BR>
+DAT_WGS,DAT_TKYのどちらも定義されていない時、必須。<BR>
+-&gt;<B>satdatp;</B> リザーブ<BR>
+<BR>
+処理の流れ<BR>
+<BR>
+if (nRec == 0) {<BR>
+初期設定<BR>
+ヘッダー読み込み<BR>
+必要ならファイルの読み込みモードをバイナリに変更する。<BR>
+}<BR>
+<BR>
+上記の各変数を設定する。<BR>
+<BR>
+正常に1レコード取り込めたら1を返す。<BR>
+レコードの終わりに来たとき0を返す。<BR>
+なんらかのエラーが発生した場合、-1を返す。<BR>
+<BR>
+6.2) 出力関数<BR>
+<BR>
+void out_TXT(FILE <B>*out</B>, cordinate_t <B>*position</B>, cnvData_t <B>*GPSLogp</B>)<BR>
+<BR>
+変数<BR>
+<B>FILE *out</B> 出力ファイルのハンドラ<BR>
+<BR>
+その他の変数は入力関数を参照。<BR>
+DAT_TIM,DAT_JST,DAT_TKY/DAT_WGS,DAT_DST,DAT_HEDが定義されていれば、<BR>
+指定通りに設定/変換/計算されています。<BR>
+<BR>
+処理の流れ<BR>
+<BR>
+if (nRec == 0) {<BR>
+初期設定<BR>
+ヘッダー書き出し<BR>
+必要ならファイルの書き込みモードをバイナリに変更する。<BR>
+}<BR>
+<BR>
+上記の各変数を利用して1レコード書き出す。<BR>
+threadの処理がある場合は終了後、必ずthreadをゼロクリアする。ない場合でもクリアを推奨。<BR>
+thread以外の引数の変更は禁止。<BR>
+<BR>
+正常に1レコード書き出せたらレコード数nRecを一つ増やす。<BR>
+なんらかのエラーが発生した場合そのままリターンできます。<BR>
+呼び出し側でerrnoをチェックしているので、正常でも常にerrnoに値が設定<BR>
+されるような特殊な処理を行なった場合、errclearをしておく必要があります。<BR>
+<BR>
+6.3) 出力終了関数<BR>
+入力関数が0を返した、つまりレコードが無くなったときに呼ばれます。<BR>
+通常は出力ファイルを閉じるだけなのでfcloseをそのまま使用すれば良く、<BR>
+特に作成する必要はありません。統計情報をとる、総て積算した値をヘッダー<BR>
+に書き込む、トレイラーを書き込むなどの処理が必要な場合に作成します。<BR><BR>
+注:現在、出力処理関数で非標準の処理を行う場合、ちょっと問題があります。そのうち修正する予定です。<BR>
+<BR>
+---<BR>
+in_xxxを他のプログラムで使うには<BR>
+T.B.D<BR>
+out_xxxを他のプログラムで使うには<BR>
+T.B.D<BR>
+---<BR>
+</P>
+<HR>
+<P>
+==========================================<BR>
+IPSフォーマットGPS使用時の日付補正について<BR>
+==========================================<BR>
+Navin'Youが時間変換関数を使うときにはtm_mon=月-1としなければいけないところをtm_mon=月でやってしまっているため変換が必要でしかもその変換が一部不可逆になっているという問題があります。<FONT color="#ff0000">現在はSONYから修正プログラムが出ています。</FONT><BR>
+<BR>
+変換が不可逆な日付(渡されるパラメータ)-&gt;正規化された日付の表を作ってみました。<BR>
+<BR>
+=====<BR>
+95/01/29(95/02/29)-&gt;95/03/01<BR>
+95/01/30(95/02/30)-&gt;95/03/02<BR>
+95/01/31(95/02/31)-&gt;95/03/03<BR>
+----<BR>
+95/02/01(95/03/01)-&gt;95/03/01<BR>
+95/02/02(95/03/02)-&gt;95/03/02<BR>
+95/02/03(95/03/03)-&gt;95/03/03<BR>
+=====<BR>
+95/03/31(95/04/31)-&gt;95/05/01<BR>
+----<BR>
+95/04/01(95/05/01)-&gt;95/05/01<BR>
+=====<BR>
+95/05/31(95/06/31)-&gt;95/07/01<BR>
+----<BR>
+95/06/01(95/07/01)-&gt;95/07/01<BR>
+=====<BR>
+95/08/31(95/09/31)-&gt;95/10/01<BR>
+----<BR>
+95/09/01(95/10/01)-&gt;95/10/01<BR>
+=====<BR>
+95/10/31(95/11/31)-&gt;95/12/01<BR>
+----<BR>
+95/11/01(95/12/01)-&gt;95/12/01<BR>
+=====<BR>
+<BR>
+例えば、95/10/31でも、95/11/01でも95/12/01と記録されてしまうので95/12/01が本当はどちらの日付かというのはこれだけでは分かりません。<BR>
+<BR>
+こういう日付が一年で7つあるわけです。<BR>
+<BR>
+なお、うるう年の時は、<BR>
+===<BR>
+96/01/30(96/02/30)-&gt;96/03/01<BR>
+96/01/31(96/02/31)-&gt;96/03/02<BR>
+----<BR>
+96/02/01(96/03/01)-&gt;96/03/01<BR>
+96/02/02(96/03/02)-&gt;96/03/02<BR>
+<BR>
+となるので6つに減ります。<BR>
+<BR>
+これではお手上げのように思えますがNavin'youは最終書き込み日付も記録しているのでこれと突き合わせればなんとかならないこともありません。しかし、ログがどちらか分からない日付を跨っている場合も有り得るので、あまりうまい手がありません。ちょっと泥臭いですが一つずつ条件を変えて試すことにしました。<BR>
+<BR>
+1)最初、どちらか分からない日付は前の月になるよう設定。<BR>
+2)レコードを手繰っていって、途中で1日以上日付が戻ったら、どちらか分からない日付は次の月に属するように設定してやり直してみます。うまく辻褄が合えばそのまま続けます。<BR>
+3)最後のレコードの日付とNavin'Youのディレクトリが持っている日付を比較してほぼ一致していればOK。<BR>
+4)一致しないようならどちらか分からない日付は後の月になるように設定して2)からやり直し。<BR>
+<BR>
+もちろん、完全ではありませんが大抵の場合はこれで問題無いと思います。</P>
+<HR>
+<P>----<BR>
+謝辞<BR>
+----<BR>
+calc_distは見習い魔術士さんのmergenypから抜き出したcalc_traceをアレンジしたものです。<BR>
+.PMF形式についての先人の解析に感謝致します。<BR>
+<BR>
+----<BR>
+献辞<BR>
+----<BR>
+本物の次世代、14才の天平と12才になった七海に。<BR>
+<BR>
+------<BR>
+その他<BR>
+------<BR>
+このプログラムの改良、一部の関数の流用は、その旨、明記されていれば自由です。ただし、もちろん無保証です。</P>
+<HR>
+<P>関連リンク<BR>
+<BR>
+<A href="http://gfreeoo.hp.infoseek.co.jp/zenrin/">trk2zpo</A></P>
+<P><A href="http://homepage2.nifty.com/asatomo2/route.htm">GarmapCEで使用できるルートの自動作成</A></P>
+<P><A href="http://www.google.co.jp/search?q=GPSLOGCV&hl=ja&lr=&ie=UTF-8&oe=UTF-8&start=0&sa=N">GoogleでGPSLOGCVを検索</A></P>
+<HR>
+<P>[<A href="../index.html">Home</A>]|[<A href="http://hpcgi1.nifty.com/gigo/n2icatbbs.cgi">GPSとH8(電子工作)の掲示板</A>]</P>
+</BODY>
+</HTML>
