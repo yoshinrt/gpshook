@@ -279,9 +279,9 @@ INLINE BOOL IsOvisWarn( gpsdata *buffer ){
 	BOOL	bRet = FALSE;
 	float	fLat, fLong;
 	
-	UINT	uDir = 1 << (( UINT )( int )buffer->bearing * 16 / 360 );
+	UINT	uDir = 1 << (( int )buffer->bearing * 16 / 360 );
 	
-	if( buffer->speed >= g_uWarnSpeed ){
+	if(( int )buffer->speed >= g_uWarnSpeed ){
 		fLat  = buffer->latitude;
 		fLong = buffer->longitude;
 		// WGS84¢ªTokyo ÊÑ´¹
