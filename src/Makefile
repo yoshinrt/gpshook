@@ -57,7 +57,7 @@ include $(PSPSDK)/lib/build_prx.mak
 
 gpshook.o: ovis_data.h
 
-ovis_data.h: gen_ovis_dat.pl ovis0610.pot
+ovis_data.h: gen_ovis_dat.pl ovis.pot
 	perl $^ $@
 
 VERSION=093b
