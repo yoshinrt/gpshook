@@ -1029,6 +1029,9 @@ static void StartNavi( UCHAR cNaviMode, int iFolderID, int iSpotID ){
 	// スポット数 get
 	g_cNaviSpotNum = 0;
 	
+	// folder id の調整 ( iFolderID < 0 時の調整 )
+	if(( g_iNaviFolderID = ( iFolderID % 50 )) < 0 ) g_iNaviFolderID += 50;
+	
 	if(( fd = sceIoOpen( FAVORITE_DAT, PSP_O_RDONLY, 0777 )) > 0 ){
 		sceIoLseek(
 			fd,
@@ -1047,9 +1050,8 @@ static void StartNavi( UCHAR cNaviMode, int iFolderID, int iSpotID ){
 	if( g_cNaviSpotNum ){
 		SoundPlay( cNaviMode == NAVI_NORMAL ? "ap_start.wav" : "apr_start.wav", 1 );
 		
-		// folder/spot id の調整
-		if(( g_iNaviFolderID = ( iFolderID % 50             )) < 0 ) g_iNaviFolderID += 50;
-		if(( g_iNaviSpotID   = ( iSpotID   % g_cNaviSpotNum )) < 0 ) g_iNaviSpotID   += g_cNaviSpotNum;
+		// spot id の調整 ( iSpotID < 0 時の調整 )
+		if(( g_iNaviSpotID = ( iSpotID % g_cNaviSpotNum )) < 0 ) g_iNaviSpotID += g_cNaviSpotNum;
 		
 		///
 		g_uCtrlReadCnt		= 0;

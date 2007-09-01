@@ -83,7 +83,7 @@ release:
 	mkdir ../gpshook$(VERSION)/GpsLogCv
 	( \
 		cd ../GPSLogCv; \
-		cp Release/gpslogcv.exe gpslogcv.[ch] psp.c readme.txt nme2kml.bat \
+		cp Release/gpslogcv.exe gpslogcv.[ch] psp.c readme.txt dat2kml.bat \
 			../gpshook$(VERSION)/GpsLogCv \
 	)
 	
