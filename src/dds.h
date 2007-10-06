@@ -1,4 +1,5 @@
 /*****************************************************************************
+$Id$
 
 		dds.h -- Deyu Deyu Software's standard include file
 		Copyright(C) 1997 - 2001 by Deyu Deyu Software

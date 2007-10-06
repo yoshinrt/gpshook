@@ -1,4 +1,5 @@
 # .tab=4
+# $Id$
 
 TARGET = gpshook
 OBJS = \
@@ -56,10 +57,10 @@ include $(PSPSDK)/lib/build_prx.mak
 
 gpshook.o: ovis_data.h
 
-ovis_data.h: gen_ovis_dat.pl ovis0610.pot
+ovis_data.h: gen_ovis_dat.pl ovis.pot
 	perl $^ $@
 
-VERSION=093b
+VERSION=093d
 release:
 	make allclean
 	
@@ -82,11 +83,13 @@ release:
 	mkdir ../gpshook$(VERSION)/GpsLogCv
 	( \
 		cd ../GPSLogCv; \
-		cp Release/gpslogcv.exe gpslogcv.[ch] psp.c readme.txt nme2kml.bat \
+		cp Release/gpslogcv.exe gpslogcv.[ch] psp.c readme.txt dat2kml.bat \
 			../gpshook$(VERSION)/GpsLogCv \
 	)
 	
-	( cd ../gpshook$(VERSION); lha a -d ../gpshook$(VERSION).lzh * )
+	( cd ../gpshook$(VERSION); \
+	rm -rf `find . -name CVS`; \
+	lha a -d ../gpshook$(VERSION).lzh * )
 
 debug:
 	make DEBUG=1
