@@ -60,7 +60,7 @@ gpshook.o: ovis_data.h
 ovis_data.h: gen_ovis_dat.pl ovis.pot
 	perl $^ $@
 
-VERSION=093c
+VERSION=093d
 release:
 	make allclean
 	

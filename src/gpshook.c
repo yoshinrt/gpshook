@@ -38,6 +38,7 @@ PSP_MAIN_THREAD_ATTR( 0 );
 	#define USE_DYN_MALLOC			// sceKernelAllocPartitionMemory を使用
 	#define USE_STATIC_OVIS_DAT		// ovis.dat を prx に内蔵
 	#define USE_SOUND				// 音声メッセージ使用
+	#define USE_SOUND_THREAD		// 警告音再生を別スレッドでやるときに定義
 #endif
 
 /*** キーコンフィグ *********************************************************/
@@ -82,11 +83,8 @@ typedef int ( *SCE_IO_OPEN )( const char *file, int flags, SceMode mode );
 
 /*** gloval var *************************************************************/
 
-BOOL g_bOvisWarning		SEC_BSS_BYTE;
-
 #ifdef USE_GPS_LOG
-	volatile int	g_fdLog = -1;
-	#define IsLogOpened		( g_fdLog >= 0 )
+	#define IsLogOpened		( fdLog >= 0 )
 #endif
 
 UCHAR	g_cPlayedSound	SEC_BSS_BYTE;
@@ -95,6 +93,8 @@ enum {
 	PLAYED_START,
 	PLAYED_END,
 };
+
+gpsdata g_GpsData;
 
 /*** read ovis data *********************************************************/
 
@@ -326,7 +326,11 @@ INLINE BOOL IsOvisWarn( gpsdata *buffer ){
 	UCHAR	g_SoundBuf[ SOUND_BUF_SIZE_ALIGNED ];
 #endif
 
-INLINE int SoundPlay( char *szSndFile, UINT uSoundLoop ){
+#ifndef USE_SOUND_THREAD
+	#define SoundPlayMain	SoundPlay
+#endif
+
+INLINE int SoundPlayMain( char *szSndFile, UINT uSoundLoop ){
 	
 	BOOL	bRet = TRUE;
 	UCHAR	*pBuf, *pBufLoad;
@@ -338,8 +342,11 @@ INLINE int SoundPlay( char *szSndFile, UINT uSoundLoop ){
 	
 	DebugMsg( "SoundPlay thread started\n" );
 	
-	int thid = sceKernelGetThreadId();
-	sceKernelChangeThreadPriority( thid, THREAD_PRIORITY_SOUND );
+	#ifndef USE_SOUND_THREAD
+		// メインスレッドで再生するときのみ，優先度を上げる
+		int thid = sceKernelGetThreadId();
+		sceKernelChangeThreadPriority( thid, THREAD_PRIORITY_SOUND );
+	#endif
 	
 	DebugMsg( "Playing...\n" );
 	
@@ -414,10 +421,35 @@ INLINE int SoundPlay( char *szSndFile, UINT uSoundLoop ){
   Exit:
 	DebugMsg( "Playing done.\n" );
 	
-	sceKernelChangeThreadPriority( thid, THREAD_PRIORITY );
+	#ifndef USE_SOUND_THREAD
+		// スレッド優先度を元に戻す
+		sceKernelChangeThreadPriority( thid, THREAD_PRIORITY );
+	#endif
 	
 	return 0;
 }
+
+#ifdef USE_SOUND_THREAD
+int		g_SoundThread;
+char	*g_szSndFile;
+UINT	g_uSoundLoopMain;
+
+// サウンドスレッド本体
+int SoundPlayThread( SceSize args, void *argp ){
+	sceIoChdir( GPSHOOK_DIR );
+	SoundPlayMain( g_szSndFile, g_uSoundLoopMain );
+	return 0;
+}
+
+// サウンドスレッド起動
+INLINE int SoundPlay( char *szSndFile, UINT uSoundLoop ){
+	g_szSndFile			= szSndFile;
+	g_uSoundLoopMain	= uSoundLoop;
+	if( g_SoundThread >= 0 ) sceKernelStartThread( g_SoundThread, 0, NULL );
+	return 0;
+}
+#endif
+
 #else	// USE_SOUND
 	#define SoundPlay( file, cnt )
 #endif	// USE_SOUND
@@ -433,8 +465,9 @@ enum {
 	LOG_CLOSE_REQ,			// Log クローズ要求
 	LOG_CLOSE_DONE,			// Log クローズ完了
 	LOG_OPEN_REQ,			// オープン要求
+	LOG_WRITE,				// GPS からのデータをログに書き出す
 };
-volatile UCHAR	g_cReOpenLog	SEC_BSS_BYTE;	// レジューム時にログ再オープン
+volatile UCHAR	g_cLogState	SEC_BSS_BYTE;	// レジューム時にログ再オープン
 
 /*
 int sceUsbGpsOpen_Hook( void ){
@@ -445,10 +478,11 @@ int sceUsbGpsOpen_Hook( void ){
 */
 
 int sceUsbGpsClose_Hook( void ){
-	#ifdef USE_GPS_LOG
-		if( IsLogOpened ) sceIoClose( g_fdLog );
-	#endif
+	// log クローズリクエスト，クローズ完了まで待つ
+	g_cLogState = LOG_CLOSE_REQ;
+	while( g_cLogState == LOG_CLOSE_REQ ) sceKernelDelayThread( MAIN_THREAD_DELAY );
 	DebugMsg( "USB GPS Close\n" );
+	
 	return sceUsbGpsClose_Real();
 }
 
@@ -461,9 +495,9 @@ int sceUsbGpsClose_Hook( void ){
 USHORT	g_uGpsLogCnt	SEC_BSS_WORD;
 
 int sceUsbGpsGetData_Hook( gpsdata *buffer, satdata *satellites ){
-	static UCHAR	cSec SEC_DATA_BYTE = 255;
 	
 	int iRet = sceUsbGpsGetData_Real( buffer, satellites );
+	g_GpsData = *buffer;
 	
 	#if 0
 		static int	iLngCnt = 100;
@@ -492,32 +526,6 @@ int sceUsbGpsGetData_Hook( gpsdata *buffer, satdata *satellites ){
 			buffer->bearing		= g_GpsTestData.bearing;
 		}
 	#endif
-	
-	if( cSec != buffer->second && buffer->valid ){
-		// GPS ログ出力
-		#ifdef USE_GPS_LOG
-			if( IsLogOpened ){
-				sceIoWrite( g_fdLog, buffer,     sizeof( gpsdata ));
-				//sceIoWrite( g_fdLog, satellites, sizeof( satdata ));
-			}
-		#endif
-		++g_uGpsLogCnt;
-		
-		/*
-		DebugMsg( "location: %d %d %d : %dm cnt=%d\n",
-			( int )( fLat * 1000000 ),
-			( int )( fLong * 1000000 ),
-			( int )buffer->bearing,
-			g_uOvisCnt ? ( int )IsDistanceNear( fLat, fLong, g_OvisData[ 546 ].fLatitude, g_OvisData[ 546 ].fLongitude ) : 99999,
-			g_uOvisCnt ? g_OvisData[ 546 ].uCnt : 99999
-		);
-		*/
-		
-		// オービスチェック
-		g_bOvisWarning = IsOvisWarn( buffer );
-		
-		cSec = buffer->second;
-	}
 	
 	return iRet;
 }
@@ -928,18 +936,20 @@ INLINE char *MakeLogFileName( char *szBuf ){
 	return szBuf;
 }
 
-void ReOpenLog( void ){
+INLINE int ReOpenLog( int fd ){
 	
 	static char szBuf[]	SEC_DATA_BYTE = "log000000_000000.dat";
 	
 	MakeLogFileName( szBuf );
 	
-	if( IsLogOpened ) sceIoClose( g_fdLog );
-	g_fdLog = sceIoOpen( szBuf, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777 );
+	if( fd >= 0 ) sceIoClose( fd );
+	int fdRet = sceIoOpen( szBuf, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777 );
 	
-	//DebugMsg( "ReOpen:%X:%s\n", ( UINT )g_fdLog, szBuf );
+	//DebugMsg( "ReOpen:%X:%s\n", ( UINT )fd, szBuf );
 	g_uGpsLogCnt = 0;
-	g_cReOpenLog = LOG_DONE;
+	g_cLogState = LOG_DONE;
+	
+	return( fdRet );
 }
 
 /*** パワーステータス コールバック ******************************************/
@@ -957,16 +967,13 @@ int PowerCallback( int unknown, int pwrflags, void *arg ){
 		DebugCmd( pspDebugSioDisableKprintf(); )
 		
 		// サスペンドに入るので，ログを閉じる
-		if( IsLogOpened ){
-			g_cReOpenLog = LOG_CLOSE_REQ;
-			// ↓意味ない?
-			//while( g_cReOpenLog != LOG_CLOSE_DONE ) sceKernelDelayThread( MAIN_THREAD_DELAY );
-		}
+		g_cLogState = LOG_CLOSE_REQ;
+		// ↓意味ない?
+		//while( g_cLogState == LOG_CLOSE_REQ ) sceKernelDelayThread( MAIN_THREAD_DELAY );
 	}else if( pwrflags & PSP_POWER_CB_RESUME_COMPLETE ){
 		// レジューム完了
-		if( g_cReOpenLog == LOG_CLOSE_DONE ){
-			g_cReOpenLog = LOG_OPEN_REQ;
-			g_bOvisWarning = TRUE;
+		if( g_cLogState == LOG_CLOSE_DONE ){
+			g_cLogState = LOG_OPEN_REQ;
 		}
 		//DebugMsg( "Power:resume complete\n" );
 	}
@@ -987,7 +994,7 @@ int PowerCallbackThread( SceSize args, void *argp ){
 }
 #endif // USE_GPS_LOG
 
-/*** ナビ開始 ***************************************************************/
+/*** auto pilot 開始 ********************************************************/
 
 #define MAX_FOLDER_NUM	50
 #define MAX_SPOT_NUM	50
@@ -1077,8 +1084,14 @@ static void StartNavi( UCHAR cNaviMode, int iFolderID, int iSpotID ){
 //Keep our module running
 int main_thread( SceSize args, void *argp ) {
 	
+	static UCHAR	cSec SEC_DATA_BYTE = 255;
+	
 	unsigned int paddata_old = 0;
 	SceCtrlData	paddata;
+	
+	#ifdef USE_GPS_LOG
+		int	fdLog = -1;
+	#endif
 	
 	sceIoChdir( GPSHOOK_DIR );
 	
@@ -1108,6 +1121,15 @@ int main_thread( SceSize args, void *argp ) {
 	
 	// スタート画面が出るまで wait
 	while( !g_uCtrlReadCnt ) sceKernelDelayThread( MAIN_THREAD_DELAY );
+   	
+   	#ifdef USE_SOUND_THREAD
+	   	g_SoundThread = sceKernelCreateThread(
+	   		"GpsSnd",
+	   		SoundPlayThread, THREAD_PRIORITY_SOUND, 0x04000, 0, NULL
+	   	);
+	   	
+	   	DebugMsg( "sound thread ID:%X\n", g_SoundThread );
+	#endif
 	
 	// ovis データロード
 	ReadOvisData();
@@ -1122,28 +1144,55 @@ int main_thread( SceSize args, void *argp ) {
 		
 		#ifdef USE_GPS_LOG
 			// サスペンド時に log クローズ
-			if( g_cReOpenLog == LOG_CLOSE_REQ ){
-				DebugMsg( "@" );
-				sceIoClose( g_fdLog );
-				g_fdLog = -1;
-				g_cReOpenLog = LOG_CLOSE_DONE;
+			if( g_cLogState == LOG_CLOSE_REQ ){
+				if( IsLogOpened ){
+					DebugMsg( "@" );
+					sceIoClose( fdLog );
+					fdLog = -1;
+					g_cLogState = LOG_CLOSE_DONE;
+				}else{
+					g_cLogState = LOG_DONE;
+				}
 			}
 			
 			// クラッシュ時のために，定期的に再オープン
 			
 			if(
 				( IsLogOpened && g_uLogInterval && ( g_uGpsLogCnt >= g_uLogInterval * 60 )) ||
-				( g_cReOpenLog == LOG_OPEN_REQ )
+				( g_cLogState == LOG_OPEN_REQ )
 			){
-				ReOpenLog();
+				fdLog = ReOpenLog( fdLog );
 			}
 		#endif
 		
-		/*** オービス警告? **************************************************/
+		/*** GPS データ update **********************************************/
 		
-		if( g_bOvisWarning ){
-			g_bOvisWarning = FALSE;
-			SoundPlay( "warning.wav", g_uSoundLoop );
+		if( cSec != g_GpsData.second && g_GpsData.valid ){
+			// GPS ログ出力
+			#ifdef USE_GPS_LOG
+				if( IsLogOpened ){
+					sceIoWrite( fdLog, &g_GpsData, sizeof( gpsdata ));
+					//sceIoWrite( fdLog, satellites, sizeof( satdata ));
+				}
+			#endif
+			++g_uGpsLogCnt;
+			
+			/*
+			DebugMsg( "location: %d %d %d : %dm cnt=%d\n",
+				( int )( fLat * 1000000 ),
+				( int )( fLong * 1000000 ),
+				( int )g_GpsData.bearing,
+				g_uOvisCnt ? ( int )IsDistanceNear( fLat, fLong, g_OvisData[ 546 ].fLatitude, g_OvisData[ 546 ].fLongitude ) : 99999,
+				g_uOvisCnt ? g_OvisData[ 546 ].uCnt : 99999
+			);
+			*/
+			
+			// オービスチェック
+			if( IsOvisWarn( &g_GpsData )){
+				SoundPlay( "warning.wav", g_uSoundLoop );
+			}
+			
+			cSec = g_GpsData.second;
 		}
 		
 		/*** auto pilot 処理 ************************************************/
@@ -1192,27 +1241,27 @@ int main_thread( SceSize args, void *argp ) {
 				if( paddata.Buttons == PAD_DEBUG ){
 					if( fdGpsTest < 0 ) fdGpsTest = sceIoOpen( "gpslog.dat", PSP_O_RDONLY, 0777 );
 					
-					DebugMsg( "log:%d fd:%d\n", g_cReOpenLog, g_fdLog );
+					DebugMsg( "log:%d fd:%d\n", g_cLogState, fdLog );
 					g_bDebugPushButt = TRUE;
 				}else
 			#endif
 			
 			// ログ取り関係
-			#ifdef USE_GPS_LOG
-				if( paddata.Buttons == PAD_LOG_START ){
-					// ログ取り開始
-					if( !IsLogOpened ) ReOpenLog();
-					SoundPlay( "log_start.wav", 1 );
-				}else if( paddata.Buttons == PAD_LOG_STOP ){
-					// ログ取り終了
-					if( IsLogOpened ){
-						sceIoClose( g_fdLog );
-						g_fdLog = -1;
-						DebugMsg( "log close\n" );
-					}
-					SoundPlay( "log_stop.wav", 1 );
-				}else
-			#endif
+		#ifdef USE_GPS_LOG
+			if( paddata.Buttons == PAD_LOG_START ){
+				// ログ取り開始
+				if( !IsLogOpened ) g_cLogState = LOG_OPEN_REQ; /*fdLog = ReOpenLog( fdLog );*/
+				SoundPlay( "log_start.wav", 1 );
+			}else if( paddata.Buttons == PAD_LOG_STOP ){
+				// ログ取り終了
+				if( IsLogOpened ){
+					sceIoClose( fdLog );
+					fdLog = -1;
+					DebugMsg( "log close\n" );
+				}
+				SoundPlay( "log_stop.wav", 1 );
+			}else
+		#endif
 			
 			// オートパイロット関係
 			if( paddata.Buttons == PAD_AP_START ){
