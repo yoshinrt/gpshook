@@ -783,6 +783,11 @@ static int rdcFlag;
 static double minSpd = 0.0;
 static double maxSpd = 29979246.0;
 
+double minLat = -90;
+double maxLat = 90;
+double minLon = -180;
+double maxLon = 180;
+
 static int cvt(int iIdx, int oIdx)
 {
     cordinate_t pos0,pos,pos0rad,posrad;
@@ -922,6 +927,8 @@ static int cvt(int iIdx, int oIdx)
                     continue;
                 if (((GPSLogBuf.thread == 0) || (GPSLogBuf.datTyp & DAT_DST))
                     && (optFlag & DAT_DST) && (GPSLogBuf.dist < minDist))
+                    continue;
+                if( pos.lat < minLat || maxLat < pos.lat || pos.lon < minLon || maxLon < pos.lon )
                     continue;
 //                if ( ((optFlag|GPSLogBuf.datTyp) & DAT_TIM) && ((t1-t0 < minTime)&&(GPSLogBuf.thread == 0)))
 //                    continue;
@@ -1102,7 +1109,7 @@ static void chkOpt(char p[])
             optFlag |= DAT_ADJ;
             maxSpd = 1000;  /* 1000m/s */
             minTime = 1;
-#if 0
+#if 1
             minLat = 30;
             maxLat = 50;
             minLon = 120;
