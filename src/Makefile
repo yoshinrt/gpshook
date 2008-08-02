@@ -88,7 +88,7 @@ release:
 	)
 	
 	( cd ../gpshook$(VERSION); \
-	rm -rf `find . -name CVS`; \
+	rm -rf `find . -name .svn`; \
 	lha a -d ../gpshook$(VERSION).lzh * )
 
 debug:
