@@ -1,4 +1,4 @@
-# maplus_conv
+# gpshook
 
 大昔に 2ch で公開していた MAPLUS に以下の機能を追加するプラグイン．
 
